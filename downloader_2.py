@@ -1,0 +1,130 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "e4b30472",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "https://data.colorado.gov/resource/cjkq-q9ih.json?area=13&periodtype=1&%24where=indcode+in+%28%2753%27%2C%27624%27%2C%27811%27%29+and+area%3D%2713%27&%24order=periodyear+desc&%24limit=1000\n",
+      "\n",
+      "Count: 132\n",
+      "Earliest time: 2000\n",
+      "Latest time: 2021\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "'\\nReference\\n\\nLine 11 were adapted from https://www.mongodb.com/docs/manual/reference/operator/query/where/\\n'"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "import json\n",
+    "import requests\n",
+    "import pymongo\n",
+    "\n",
+    "URL =  \"https://data.colorado.gov/resource/cjkq-q9ih.json\"\n",
+    "\n",
+    "# Parameters\n",
+    "paramD = dict()\n",
+    "paramD[\"area\"] = \"13\"    \n",
+    "paramD[\"periodtype\"]=\"1\"\n",
+    "paramD[\"$where\"] = \"indcode in ('53','624','811') and area='13'\"\n",
+    "paramD[\"$order\"] = \"periodyear desc\"\n",
+    "paramD[\"$limit\"] = 1000\n",
+    "\n",
+    "\n",
+    "# Open URL \n",
+    "document = requests.get(URL, paramD)\n",
+    "print(document.request.url)\n",
+    "\n",
+    "js = document.json()\n",
+    "        \n",
+    "if document.status_code != 200 :\n",
+    "     print(\"Error code=\",document.status_code, document.request.url)\n",
+    "     js = json.loads(\"{}\")\n",
+    "\n",
+    "# JSON open, close, save as txt file local\n",
+    "files = open(\"bouldercounty.txt\", \"w\")\n",
+    "files.write(json.dumps(js).strip())\n",
+    "files.close()\n",
+    "\n",
+    "# Check length of data\n",
+    "length = len(js)\n",
+    "print (\"\\nCount:\", length)\n",
+    "\n",
+    "# Show error if length < 10\n",
+    "target_number = 10\n",
+    "if length < target_number:\n",
+    "    raise Exception(\"Error: fewer than {} records found\".format(target_number))\n",
+    "\n",
+    "# Connect to MongoDB\n",
+    "client = pymongo.MongoClient(\"mongodb+srv://m001-student:m001-mongodb-basics@cluster0.cxxyhrz.mongodb.net/?retryWrites=true&w=majority\")\n",
+    "\n",
+    "# Access database and create collection\n",
+    "db = client[\"new_database\"]\n",
+    "collection = db[\"bouldercounty\"]\n",
+    "\n",
+    "# Insert data into the collection\n",
+    "collection.insert_many(js)\n",
+    "\n",
+    "# Check the earliest time and latest time for Step 8\n",
+    "earliest_record = collection.find_one(sort=[(\"periodyear\", pymongo.ASCENDING)])\n",
+    "earliest_time = earliest_record[\"periodyear\"]\n",
+    "print(\"Earliest time:\", earliest_time)\n",
+    "\n",
+    "latest_record = collection.find_one(sort=[(\"periodyear\", pymongo.DESCENDING)])\n",
+    "latest_time = latest_record[\"periodyear\"]\n",
+    "print(\"Latest time:\", latest_time)\n",
+    "\n",
+    "# Close the connection\n",
+    "client.close()\n",
+    "\n",
+    "\"\"\"\n",
+    "Reference\n",
+    "\n",
+    "Line 11 were adapted from https://www.mongodb.com/docs/manual/reference/operator/query/where/\n",
+    "\"\"\"\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2fce9db1",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.13"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
